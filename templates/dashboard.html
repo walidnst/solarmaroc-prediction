@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SolarMaroc — Prévision de production</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-void: #0E1626;
+    --bg-panel: #16223A;
+    --bg-panel-raised: #1C2C48;
+    --line: #2A3A58;
+    --accent-gold: #E8A33D;
+    --accent-gold-dim: #B5822E;
+    --accent-teal: #35A99C;
+    --accent-rust: #C4622D;
+    --text-warm: #EDE6D6;
+    --text-muted: #8A97B3;
+    --text-faint: #566180;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: radial-gradient(ellipse 120% 80% at 50% -10%, #1A2A48 0%, var(--bg-void) 55%);
+    color: var(--text-warm);
+    font-family: 'IBM Plex Sans', sans-serif;
+    min-height: 100vh;
+    padding: 0 0 64px 0;
+  }
+
+  .wrap { max-width: 980px; margin: 0 auto; padding: 0 28px; }
+
+  /* ---------- Header ---------- */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 28px 0 8px 0;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 40px;
+  }
+  .brand { display: flex; align-items: baseline; gap: 10px; }
+  .brand-mark {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 20px;
+    letter-spacing: 0.02em;
+  }
+  .brand-mark span { color: var(--accent-gold); }
+  .brand-sub {
+    font-size: 12px;
+    color: var(--text-faint);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  .status-pill {
+    display: flex; align-items: center; gap: 7px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+    padding-bottom: 20px;
+  }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent-teal); box-shadow: 0 0 8px var(--accent-teal); }
+
+  /* ---------- Hero ---------- */
+  .hero { display: grid; grid-template-columns: 1.1fr 1fr; gap: 40px; align-items: center; margin-bottom: 48px; }
+  @media (max-width: 760px) { .hero { grid-template-columns: 1fr; } }
+
+  .hero-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--accent-teal);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .hero-value {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 76px;
+    line-height: 0.95;
+    letter-spacing: -0.02em;
+    color: var(--text-warm);
+  }
+  .hero-value .unit { font-size: 28px; color: var(--accent-gold); font-weight: 600; margin-left: 6px; }
+  .hero-desc { color: var(--text-muted); font-size: 14.5px; margin-top: 14px; line-height: 1.6; max-width: 40ch; }
+  .hero-desc b { color: var(--text-warm); font-weight: 600; }
+
+  /* ---------- Solar arc (signature element) ---------- */
+  .arc-box { position: relative; }
+  .arc-caption {
+    text-align: center;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--text-faint);
+    margin-top: -6px;
+    letter-spacing: 0.05em;
+  }
+
+  /* ---------- Panels ---------- */
+  .panel {
+    background: var(--bg-panel);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 28px;
+    margin-bottom: 24px;
+  }
+  .panel-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 15px;
+    margin: 0 0 4px 0;
+  }
+  .panel-sub { color: var(--text-faint); font-size: 12.5px; margin: 0 0 22px 0; }
+
+  /* ---------- Controls ---------- */
+  .controls-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px 28px; }
+  @media (max-width: 600px) { .controls-grid { grid-template-columns: 1fr; } }
+
+  .field label {
+    display: flex; justify-content: space-between;
+    font-size: 12.5px; color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+  .field label .val { font-family: 'IBM Plex Mono', monospace; color: var(--accent-gold); font-weight: 500; }
+
+  select, input[type="range"] { width: 100%; }
+
+  select {
+    background: var(--bg-panel-raised);
+    border: 1px solid var(--line);
+    color: var(--text-warm);
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 14px;
+  }
+
+  input[type="range"] {
+    -webkit-appearance: none;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--line);
+    outline: none;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--accent-gold);
+    cursor: pointer;
+    box-shadow: 0 0 0 4px rgba(232, 163, 61, 0.18);
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 16px; height: 16px; border: none; border-radius: 50%;
+    background: var(--accent-gold); cursor: pointer;
+  }
+
+  .full-row { grid-column: 1 / -1; }
+
+  button.predict-btn {
+    margin-top: 24px;
+    width: 100%;
+    background: var(--accent-gold);
+    color: #1A1204;
+    border: none;
+    padding: 14px;
+    border-radius: 9px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 14.5px;
+    letter-spacing: 0.01em;
+    cursor: pointer;
+    transition: filter 0.15s ease, transform 0.1s ease;
+  }
+  button.predict-btn:hover { filter: brightness(1.08); }
+  button.predict-btn:active { transform: scale(0.99); }
+  button.predict-btn:focus-visible { outline: 2px solid var(--accent-teal); outline-offset: 2px; }
+  button.predict-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+  /* ---------- Curve chart ---------- */
+  #curveChart { width: 100%; height: 260px; display: block; }
+  .curve-legend { display: flex; gap: 20px; margin-top: 4px; font-size: 12px; color: var(--text-muted); font-family: 'IBM Plex Mono', monospace; }
+  .curve-legend span { display: flex; align-items: center; gap: 6px; }
+  .swatch { width: 10px; height: 10px; border-radius: 2px; }
+
+  .error-box {
+    display: none;
+    background: rgba(196, 98, 45, 0.12);
+    border: 1px solid var(--accent-rust);
+    color: #E8B79A;
+    padding: 12px 16px;
+    border-radius: 9px;
+    font-size: 13px;
+    margin-bottom: 20px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .mode-switch { display: flex; gap: 8px; margin-bottom: 32px; }
+  .mode-btn {
+    flex: 1;
+    background: var(--bg-panel);
+    border: 1px solid var(--line);
+    color: var(--text-muted);
+    padding: 12px;
+    border-radius: 9px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 13.5px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .mode-btn.active { background: var(--accent-teal); color: #06231D; border-color: var(--accent-teal); }
+  .mode-btn:not(.active):hover { border-color: var(--text-faint); color: var(--text-warm); }
+
+  .day-totals { display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap; }
+  .day-card {
+    flex: 1; min-width: 120px;
+    background: var(--bg-panel-raised);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .day-card .date { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.05em; }
+  .day-card .total { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 22px; color: var(--accent-gold); margin-top: 4px; }
+
+  footer {
+    text-align: center;
+    color: var(--text-faint);
+    font-size: 11.5px;
+    font-family: 'IBM Plex Mono', monospace;
+    margin-top: 20px;
+    letter-spacing: 0.03em;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="brand-mark">Solar<span>Maroc</span></div>
+      <div class="brand-sub">Prévision J-1</div>
+    </div>
+    <div class="status-pill"><span class="dot"></span> API connectée</div>
+  </header>
+
+  <div class="error-box" id="errorBox"></div>
+
+  <div class="mode-switch">
+    <button class="mode-btn active" id="modeForecastBtn" onclick="switchMode('forecast')">Prévision réelle</button>
+    <button class="mode-btn" id="modeManualBtn" onclick="switchMode('manual')">Simulation manuelle</button>
+  </div>
+
+  <section class="hero">
+    <div>
+      <div class="hero-label" id="heroLabel">Production estimée — maintenant</div>
+      <div class="hero-value" id="heroValue">—<span class="unit">kWh</span></div>
+      <p class="hero-desc" id="heroDesc">Chargement de la météo en direct…</p>
+    </div>
+    <div class="arc-box">
+      <svg id="arcSvg" viewBox="0 0 320 200" width="100%" height="auto"></svg>
+      <div class="arc-caption" id="arcCaption">Position du soleil à l'heure sélectionnée</div>
+    </div>
+  </section>
+
+  <section class="panel" id="forecastPanel">
+    <h2 class="panel-title">Prévision météo réelle</h2>
+    <p class="panel-sub">Données live via Open-Meteo — aucune saisie manuelle, tout est automatique.</p>
+
+    <div class="controls-grid">
+      <div class="field full-row">
+        <label>Ville <span class="val" id="villeLabelForecast"></span></label>
+        <select id="villeForecast"></select>
+      </div>
+      <div class="field full-row">
+        <label>Nombre de jours <span class="val" id="joursVal">2</span></label>
+        <input type="range" id="jours" min="1" max="5" value="2">
+      </div>
+    </div>
+
+    <button class="predict-btn" id="forecastBtn">Actualiser la météo en direct</button>
+
+    <div class="day-totals" id="dayTotals"></div>
+  </section>
+
+  <section class="panel" id="manualPanel" style="display:none">
+    <h2 class="panel-title">Conditions prévues (test manuel)</h2>
+    <p class="panel-sub">Simule des scénarios hypothétiques — utile pour tester des cas extrêmes (canicule, tempête de sable...).</p>
+
+    <div class="controls-grid">
+      <div class="field full-row">
+        <label>Ville <span class="val" id="villeLabel"></span></label>
+        <select id="ville"></select>
+      </div>
+
+      <div class="field">
+        <label>Mois <span class="val" id="moisVal"></span></label>
+        <input type="range" id="mois" min="1" max="12" value="7">
+      </div>
+      <div class="field">
+        <label>Heure <span class="val" id="heureVal"></span></label>
+        <input type="range" id="heure" min="0" max="23" value="14">
+      </div>
+      <div class="field">
+        <label>Température (°C) <span class="val" id="tempVal"></span></label>
+        <input type="range" id="temperature" min="-5" max="45" value="30">
+      </div>
+      <div class="field">
+        <label>Nébulosité (%) <span class="val" id="nebVal"></span></label>
+        <input type="range" id="nebulosite" min="0" max="100" value="10">
+      </div>
+      <div class="field">
+        <label>Humidité (%) <span class="val" id="humVal"></span></label>
+        <input type="range" id="humidite" min="0" max="100" value="30">
+      </div>
+      <div class="field">
+        <label>Vent (km/h) <span class="val" id="ventVal"></span></label>
+        <input type="range" id="vent" min="0" max="60" value="10">
+      </div>
+    </div>
+
+    <button class="predict-btn" id="predictBtn">Calculer la prédiction</button>
+  </section>
+
+  <section class="panel">
+    <h2 class="panel-title" id="curveTitle">Courbe de production</h2>
+    <p class="panel-sub" id="curveSub">Production prévue heure par heure, à partir de la météo réelle.</p>
+    <svg id="curveChart" viewBox="0 0 900 260"></svg>
+    <div class="curve-legend">
+      <span><span class="swatch" style="background:var(--accent-gold)"></span> Production prévue (kWh)</span>
+      <span id="peakInfo"></span>
+    </div>
+  </section>
+
+  <footer>Modèle XGBoost — entraîné sans irradiance mesurée (scénario de prévision réaliste)</footer>
+</div>
+
+<script>
+const API_BASE = "";
+const villes = {{ villes | tojson }};
+
+// ---------- Peupler les deux selects de ville (mode reel + mode manuel) ----------
+[document.getElementById("villeForecast"), document.getElementById("ville")].forEach(select => {
+  villes.forEach(v => {
+    const opt = document.createElement("option");
+    opt.value = v; opt.textContent = v.replace("_", " ");
+    select.appendChild(opt);
+  });
+});
+
+let currentMode = "forecast";
+
+function switchMode(mode) {
+  currentMode = mode;
+  document.getElementById("modeForecastBtn").classList.toggle("active", mode === "forecast");
+  document.getElementById("modeManualBtn").classList.toggle("active", mode === "manual");
+  document.getElementById("forecastPanel").style.display = mode === "forecast" ? "block" : "none";
+  document.getElementById("manualPanel").style.display = mode === "manual" ? "block" : "none";
+  document.getElementById("dayTotals").style.display = mode === "forecast" ? "flex" : "none";
+
+  if (mode === "forecast") {
+    document.getElementById("curveTitle").textContent = "Courbe de production — météo réelle";
+    document.getElementById("curveSub").textContent = "Production prévue heure par heure, à partir de la météo réelle.";
+    loadRealForecast();
+  } else {
+    document.getElementById("curveTitle").textContent = "Courbe de production — 24h simulées";
+    document.getElementById("curveSub").textContent = "Prédiction heure par heure pour la journée simulée ci-dessus.";
+    runManualPrediction();
+  }
+}
+
+function showError(msg) {
+  const box = document.getElementById("errorBox");
+  box.textContent = msg;
+  box.style.display = "block";
+}
+function hideError() {
+  document.getElementById("errorBox").style.display = "none";
+}
+
+// ---------- Arc solaire (commun aux deux modes) ----------
+function drawArc(heure, intensite) {
+  const svg = document.getElementById("arcSvg");
+  const cx = 160, cy = 170, r = 130;
+  const heureNormalisee = Math.min(Math.max((heure - 6) / 12, 0), 1);
+  const angle = Math.PI * (1 - heureNormalisee);
+  const sunX = cx + r * Math.cos(angle);
+  const sunY = cy - r * Math.sin(angle);
+  const glow = Math.max(0.15, Math.min(intensite, 1));
+  const sunSize = 8 + glow * 14;
+
+  svg.innerHTML = `
+    <defs>
+      <radialGradient id="sunGlow" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#F5C463" stop-opacity="0.9"/>
+        <stop offset="100%" stop-color="#F5C463" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <path d="M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}" fill="none" stroke="#2A3A58" stroke-width="1.5" stroke-dasharray="3 5"/>
+    <line x1="${cx - r - 15}" y1="${cy}" x2="${cx + r + 15}" y2="${cy}" stroke="#2A3A58" stroke-width="1.5"/>
+    <circle cx="${sunX}" cy="${sunY}" r="${sunSize * 2.4}" fill="url(#sunGlow)" opacity="${0.35 + glow * 0.5}"/>
+    <circle cx="${sunX}" cy="${sunY}" r="${sunSize}" fill="#E8A33D"/>
+    <text x="${cx - r}" y="${cy + 20}" fill="#566180" font-size="11" font-family="IBM Plex Mono, monospace">6h</text>
+    <text x="${cx + r - 18}" y="${cy + 20}" fill="#566180" font-size="11" font-family="IBM Plex Mono, monospace">18h</text>
+    <text x="${cx - 10}" y="${cy - r - 8}" fill="#566180" font-size="11" font-family="IBM Plex Mono, monospace">12h</text>
+  `;
+}
+
+function drawCurve(values, labels) {
+  const svg = document.getElementById("curveChart");
+  const W = 900, H = 260, padL = 40, padB = 30, padT = 15, padR = 10;
+  const plotW = W - padL - padR, plotH = H - padT - padB;
+  const maxVal = Math.max(...values, 0.05);
+
+  let bars = "";
+  const barW = plotW / values.length;
+  values.forEach((v, i) => {
+    const h = (v / maxVal) * plotH;
+    const x = padL + i * barW;
+    const y = padT + plotH - h;
+    bars += `<rect x="${x + barW * 0.15}" y="${y}" width="${barW * 0.7}" height="${h}" rx="2" fill="#E8A33D" opacity="${0.55 + 0.45 * (v / maxVal)}"/>`;
+  });
+
+  let axisLabels = "";
+  const step = Math.max(1, Math.round(values.length / 8));
+  labels.forEach((lab, i) => {
+    if (i % step !== 0) return;
+    const x = padL + i * barW + barW / 2;
+    axisLabels += `<text x="${x}" y="${H - 8}" fill="#566180" font-size="10" font-family="IBM Plex Mono, monospace" text-anchor="middle">${lab}</text>`;
+  });
+
+  svg.innerHTML = `
+    <line x1="${padL}" y1="${padT + plotH}" x2="${W - padR}" y2="${padT + plotH}" stroke="#2A3A58" stroke-width="1"/>
+    ${bars}
+    ${axisLabels}
+  `;
+
+  const peakIdx = values.indexOf(maxVal);
+  document.getElementById("peakInfo").textContent = `Pic estimé : ${maxVal.toFixed(3)} kWh (${labels[peakIdx] || ""})`;
+}
+
+// ---------- MODE PREVISION REELLE ----------
+async function loadRealForecast() {
+  hideError();
+  const ville = document.getElementById("villeForecast").value;
+  const jours = document.getElementById("jours").value;
+  document.getElementById("villeLabelForecast").textContent = ville.replace("_", " ");
+
+  const btn = document.getElementById("forecastBtn");
+  btn.disabled = true;
+  btn.textContent = "Chargement de la météo…";
+  document.getElementById("heroDesc").textContent = "Récupération des prévisions météo en direct…";
+
+  try {
+    const res = await fetch(`${API_BASE}/predict-forecast?ville=${ville}&jours=${jours}`);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.erreur || "Erreur inconnue");
+
+    const previsions = data.previsions_horaires;
+    if (!previsions.length) throw new Error("Aucune prévision reçue.");
+
+    // Heure actuelle la plus proche pour la valeur hero
+    const maintenant = new Date();
+    let plusProche = previsions[0];
+    let ecartMin = Infinity;
+    previsions.forEach(p => {
+      const ecart = Math.abs(new Date(p.datetime.replace(" ", "T")) - maintenant);
+      if (ecart < ecartMin) { ecartMin = ecart; plusProche = p; }
+    });
+
+    document.getElementById("heroLabel").textContent = "Production estimée — prochaine heure";
+    document.getElementById("heroValue").innerHTML = plusProche.production_kwh.toFixed(3) + '<span class="unit">kWh</span>';
+    document.getElementById("heroDesc").innerHTML =
+      `Météo réelle pour <b>${ville.replace("_"," ")}</b> le ${plusProche.datetime} : ${plusProche.temperature_c}°C, ${plusProche.nebulosite_pct}% de nébulosité.`;
+
+    const heureDuPoint = new Date(plusProche.datetime.replace(" ", "T")).getHours();
+    drawArc(heureDuPoint, plusProche.production_kwh / 0.9);
+
+    const valeurs = previsions.map(p => p.production_kwh);
+    const labels = previsions.map(p => p.datetime.split(" ")[1].slice(0,5));
+    drawCurve(valeurs, labels);
+
+    // Totaux par jour
+    const totauxDiv = document.getElementById("dayTotals");
+    totauxDiv.innerHTML = "";
+    Object.entries(data.totaux_par_jour).forEach(([jour, total]) => {
+      const card = document.createElement("div");
+      card.className = "day-card";
+      card.innerHTML = `<div class="date">${jour}</div><div class="total">${total.toFixed(2)} kWh</div>`;
+      totauxDiv.appendChild(card);
+    });
+
+  } catch (e) {
+    showError("Erreur météo : " + e.message);
+    document.getElementById("heroDesc").textContent = "Impossible de charger la météo en direct.";
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Actualiser la météo en direct";
+  }
+}
+
+document.getElementById("forecastBtn").addEventListener("click", loadRealForecast);
+document.getElementById("villeForecast").addEventListener("change", loadRealForecast);
+document.getElementById("jours").addEventListener("input", () => {
+  document.getElementById("joursVal").textContent = document.getElementById("jours").value;
+});
+document.getElementById("jours").addEventListener("change", loadRealForecast);
+
+// ---------- MODE SIMULATION MANUELLE ----------
+const villeSelect = document.getElementById("ville");
+const sliders = ["mois", "heure", "temperature", "nebulosite", "humidite", "vent"];
+const labelsMap = { mois: "moisVal", heure: "heureVal", temperature: "tempVal", nebulosite: "nebVal", humidite: "humVal", vent: "ventVal" };
+const units = { mois: "", heure: "h", temperature: "°C", nebulosite: "%", humidite: "%", vent: "km/h" };
+
+function refreshLabels() {
+  sliders.forEach(id => {
+    const el = document.getElementById(id);
+    document.getElementById(labelsMap[id]).textContent = el.value + units[id];
+  });
+  document.getElementById("villeLabel").textContent = villeSelect.value.replace("_", " ");
+}
+sliders.forEach(id => document.getElementById(id).addEventListener("input", refreshLabels));
+villeSelect.addEventListener("change", refreshLabels);
+refreshLabels();
+
+function jourAnneeDepuisMois(mois) {
+  const joursCumules = [0,31,59,90,120,151,181,212,243,273,304,334];
+  return joursCumules[mois - 1] + 15;
+}
+
+function buildPayload(heureOverride) {
+  const mois = parseInt(document.getElementById("mois").value);
+  return {
+    ville: villeSelect.value,
+    mois: mois,
+    jour_semaine: 2,
+    heure: heureOverride !== undefined ? heureOverride : parseInt(document.getElementById("heure").value),
+    jour_annee: jourAnneeDepuisMois(mois),
+    temperature_c: parseFloat(document.getElementById("temperature").value),
+    nebulosite_pct: parseFloat(document.getElementById("nebulosite").value),
+    humidite_pct: parseFloat(document.getElementById("humidite").value),
+    vent_kmh: parseFloat(document.getElementById("vent").value),
+  };
+}
+
+async function predictOne(payload) {
+  const res = await fetch(API_BASE + "/predict-production", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.erreur || "Erreur inconnue");
+  return data.production_prevue_kwh;
+}
+
+async function runManualPrediction() {
+  hideError();
+  const btn = document.getElementById("predictBtn");
+  btn.disabled = true;
+  btn.textContent = "Calcul en cours…";
+
+  try {
+    const payload = buildPayload();
+    const valeur = await predictOne(payload);
+
+    document.getElementById("heroLabel").textContent = "Production estimée — scénario simulé";
+    document.getElementById("heroValue").innerHTML = valeur.toFixed(3) + '<span class="unit">kWh</span>';
+    document.getElementById("heroDesc").innerHTML =
+      `Scénario simulé à <b>${payload.heure}h</b> pour <b>${payload.ville.replace("_"," ")}</b>, avec ${payload.temperature_c}°C et ${payload.nebulosite_pct}% de nébulosité.`;
+
+    drawArc(payload.heure, valeur / 0.9);
+
+    const heures = Array.from({length: 24}, (_, i) => i);
+    const valeurs = [];
+    for (const h of heures) {
+      const p = buildPayload(h);
+      const v = await predictOne(p);
+      valeurs.push(v);
+    }
+    drawCurve(valeurs, heures.map(h => h + "h"));
+
+  } catch (e) {
+    showError("Erreur : " + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Calculer la prédiction";
+  }
+}
+
+document.getElementById("predictBtn").addEventListener("click", runManualPrediction);
+
+// ---------- Chargement initial ----------
+window.addEventListener("load", () => {
+  if (villes.length > 0) {
+    switchMode("forecast");
+  } else {
+    showError("Aucun modèle chargé côté API. Vérifie le dossier models/.");
+  }
+});
+</script>
+</body>
+</html>
